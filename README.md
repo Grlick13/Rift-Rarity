@@ -29,8 +29,6 @@ This outputs the static site into the **`dist`** folder (`dist/`).
 
 ---
 
-## Deploy to Netlify
-
 ## Firebase Scoreboard & Google Sign-In on Your Live URL
 
 - Anonymous play and adaptive community answer rarity work out of the box on your deployed site using the bundled `firebase-applet-config.json`.
