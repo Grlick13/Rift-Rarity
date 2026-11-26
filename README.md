@@ -31,30 +31,6 @@ This outputs the static site into the **`dist`** folder (`dist/`).
 
 ## Deploy to Netlify
 
-### Option A: Drag & Drop (Fastest)
-1. Run `npm install && npm run build`.
-2. Open [Netlify Drop](https://app.netlify.com/drop).
-3. Drag and drop the **`dist`** folder onto the page.
-
-### Option B: Git Repository
-1. Push this repository to GitHub/GitLab.
-2. In Netlify, choose **Add new site -> Import an existing project**.
-3. Set:
-   - **Build command:** `npm run build`
-   - **Publish directory:** `dist`
-4. Click **Deploy site**.
-
----
-
-## Deploy to GitHub Pages
-
-1. Run `npm install && npm run build`.
-2. Upload the contents of the **`dist`** folder to your `gh-pages` branch (or configure a GitHub Actions workflow using `actions/upload-pages-artifact` with `path: dist`).
-3. In your repository **Settings -> Pages**, choose your `gh-pages` branch (or GitHub Actions) as the source.
-   - `vite.config.ts` uses `base: './'`, so assets resolve cleanly on `https://<username>.github.io/<repo>/` as well as custom domains.
-
----
-
 ## Firebase Scoreboard & Google Sign-In on Your Live URL
 
 - Anonymous play and adaptive community answer rarity work out of the box on your deployed site using the bundled `firebase-applet-config.json`.
