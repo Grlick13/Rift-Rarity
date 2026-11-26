@@ -1,0 +1,153 @@
+{
+  "entities": {
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "A verified player's submitted run score on the Rift Rarity scoreboard.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the summoner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "summonerName": {
+          "type": "string",
+          "description": "Public display name shown on the scoreboard.",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["daily", "unlimited"],
+          "description": "Game mode for the run."
+        },
+        "dateKey": {
+          "type": "string",
+          "description": "UTC date string YYYY-MM-DD.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "score": {
+          "type": "integer",
+          "description": "Total run score in points."
+        },
+        "finalRank": {
+          "type": "string",
+          "enum": [
+            "iron",
+            "bronze",
+            "silver",
+            "gold",
+            "platinum",
+            "emerald",
+            "diamond",
+            "master",
+            "grandmaster",
+            "challenger"
+          ],
+          "description": "Final earned rank tier."
+        },
+        "reachedZone": {
+          "type": "string",
+          "description": "Name of the farthest Rift zone reached.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "progress": {
+          "type": "number",
+          "description": "Journey distance reached along the 0..100 Rift map."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Marks public scoreboard visibility."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of score submission."
+        }
+      },
+      "required": [
+        "uid",
+        "summonerName",
+        "mode",
+        "dateKey",
+        "score",
+        "finalRank",
+        "reachedZone",
+        "progress",
+        "isPublic",
+        "createdAt"
+      ]
+    },
+    "AnswerStat": {
+      "title": "AnswerStat",
+      "description": "Aggregated player pick count for a specific question and answer.",
+      "type": "object",
+      "properties": {
+        "questionId": {
+          "type": "string",
+          "description": "Canonical question identifier.",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "answerId": {
+          "type": "string",
+          "description": "Canonical valid answer identifier.",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "answerName": {
+          "type": "string",
+          "description": "Human-readable answer display name.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "pickCount": {
+          "type": "integer",
+          "description": "Cumulative times players have chosen this answer."
+        },
+        "lastPickedDay": {
+          "type": "string",
+          "description": "UTC date string YYYY-MM-DD when last chosen.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Marks public rarity statistics visibility."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest update."
+        }
+      },
+      "required": [
+        "questionId",
+        "answerId",
+        "answerName",
+        "pickCount",
+        "lastPickedDay",
+        "isPublic",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/leaderboard_entries/{entryId}": {
+      "schema": { "$ref": "#/entities/LeaderboardEntry" },
+      "description": "Immutable run scores posted by verified players for Daily and Unlimited scoreboards."
+    },
+    "/answer_stats/{statId}": {
+      "schema": { "$ref": "#/entities/AnswerStat" },
+      "description": "Per-question, per-answer community pick counts used to dynamically measure answer rarity across days."
+    }
+  }
+}

@@ -1,0 +1,172 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable hardened primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidDateKey(d) {
+      return d is string && d.size() == 10 && d.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function isValidRank(rank) {
+      return rank in [
+        'iron',
+        'bronze',
+        'silver',
+        'gold',
+        'platinum',
+        'emerald',
+        'diamond',
+        'master',
+        'grandmaster',
+        'challenger'
+      ];
+    }
+
+    function isValidLeaderboardEntry(data) {
+      return data.keys().hasAll([
+          'uid',
+          'summonerName',
+          'mode',
+          'dateKey',
+          'score',
+          'finalRank',
+          'reachedZone',
+          'progress',
+          'isPublic',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'summonerName',
+          'mode',
+          'dateKey',
+          'score',
+          'finalRank',
+          'reachedZone',
+          'progress',
+          'isPublic',
+          'createdAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.uid == request.auth.uid &&
+        data.summonerName is string &&
+        data.summonerName.size() >= 1 &&
+        data.summonerName.size() <= 32 &&
+        data.mode in ['daily', 'unlimited'] &&
+        isValidDateKey(data.dateKey) &&
+        data.score is int &&
+        data.score >= 0 &&
+        data.score <= 25000 &&
+        isValidRank(data.finalRank) &&
+        data.reachedZone is string &&
+        data.reachedZone.size() >= 1 &&
+        data.reachedZone.size() <= 40 &&
+        (data.progress is int || data.progress is float) &&
+        data.progress >= 0 &&
+        data.progress <= 100 &&
+        data.isPublic == true &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidAnswerStat(data) {
+      return data.keys().hasAll([
+          'questionId',
+          'answerId',
+          'answerName',
+          'pickCount',
+          'lastPickedDay',
+          'isPublic',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'questionId',
+          'answerId',
+          'answerName',
+          'pickCount',
+          'lastPickedDay',
+          'isPublic',
+          'updatedAt'
+        ]) &&
+        isValidId(data.questionId) &&
+        data.questionId.size() <= 64 &&
+        isValidId(data.answerId) &&
+        data.answerId.size() <= 64 &&
+        data.answerName is string &&
+        data.answerName.size() >= 1 &&
+        data.answerName.size() <= 80 &&
+        data.pickCount is int &&
+        data.pickCount >= 1 &&
+        data.pickCount <= 10000000 &&
+        isValidDateKey(data.lastPickedDay) &&
+        data.isPublic == true &&
+        data.updatedAt is timestamp;
+    }
+
+    // Startup connection validation document
+    match /test/connection {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    // Public Scoreboard Entries (append-only by verified Google accounts)
+    match /leaderboard_entries/{entryId} {
+      allow get: if existing().isPublic == true;
+      allow list: if resource.data.isPublic == true;
+      allow create: if isVerifiedUser() &&
+        isValidId(entryId) &&
+        isValidLeaderboardEntry(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // Community Answer Pick Frequency (public read, strictly +1 increment by verified users)
+    match /answer_stats/{statId} {
+      allow get: if existing().isPublic == true;
+      allow list: if resource.data.isPublic == true;
+      allow create: if isVerifiedUser() &&
+        isValidId(statId) &&
+        isValidAnswerStat(incoming()) &&
+        incoming().pickCount == 1 &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(statId) &&
+        isValidAnswerStat(incoming()) &&
+        incoming().questionId == existing().questionId &&
+        incoming().answerId == existing().answerId &&
+        incoming().isPublic == existing().isPublic &&
+        incoming().pickCount == existing().pickCount + 1 &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'pickCount',
+          'lastPickedDay',
+          'updatedAt',
+          'answerName'
+        ]);
+      allow delete: if false;
+    }
+  }
+}
